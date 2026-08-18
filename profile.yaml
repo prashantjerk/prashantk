@@ -1,0 +1,93 @@
+name: Prashant Karki
+email: praskarkii@gmail.com
+github: prashantjerk
+linkedin: prashant-karki
+twitter: ''
+website: ''
+cli: claude-code
+sections:
+  - hero
+  - about
+  - experience
+  - projects
+  - skills
+  - education
+  - contact
+design:
+  creativity: 8
+  simplicity: 6
+  playfulness: 4
+  animation: 6
+  color_intensity: 4
+  notes: ''
+design_inspirations:
+  - name: Windows 93
+    url: https://www.windows93.net
+    attributes:
+      fontFamily: Pixel
+      fontSize: 10
+      fontWeight: 400
+      letterSpacing: normal
+      colorBg: '#000000'
+      colorText: '#ffffff'
+      colorAccent: '#5e6ad2'
+      maxWidth: 1200
+      alignment: left
+      sectionSpacing: 8
+      padding: 40
+      motionDuration: 200
+      motionStyle: fade
+      borderWidth: 1
+      borderRadius: 0
+    descriptions:
+      typography: Pixel font (Press Start 2P), 8-12px, bitmap
+      colors: Neon (magenta/cyan/yellow), black bg, high saturation
+      layout: OS window metaphor, draggable windows, desktop UI
+      spacing: Pixelated 8px grid, retro OS spacing
+      motion: Glitch effects, cursor trails, animated backgrounds
+      details: Pixel art icons, window chrome, 90s nostalgia
+content:
+  tone: creative
+  length: balanced
+  focus: projects
+ai:
+  quality_bar: 7
+  research_depth: 6
+  copy_creativity: 5
+notes: >-
+  I want this portfolio to feel personal, clean, and a little different from the typical student
+  developer portfolio. I don't want it to feel overly polished, corporate, or like it came from a
+  template. I want someone visiting the site to get a sense of who I am and what I’m interested in
+  within the first few seconds.
+
+
+  I’m studying accounting and computer science, with a math minor, so I like the combination of
+  business, technology, data, and problem solving. I want the site to reflect that mix without
+  making it feel like I’m trying too hard to explain it. I care more about showing what I’ve
+  actually done and how I think than listing a huge number of technologies.
+
+
+  Visually, I like minimal and modern designs, but I don't want something completely plain. Give it
+  some personality through typography, spacing, subtle interactions, interesting layouts, and small
+  details. I don't want excessive gradients, flashy animations, giant text everywhere, or the usual
+  "developer portfolio" look.
+
+
+  I want it to feel confident but not arrogant, technical but approachable, and professional without
+  feeling corporate. Someone looking at it should feel like there is an actual person behind the
+  site.
+
+
+  For the content, keep things honest. Don't make unfinished ideas sound like completed projects,
+  and don't exaggerate my experience. I'd rather have a few things presented really well than a page
+  full of things that don't mean much.
+
+
+  My long-term goal is to work where technology and business overlap, especially around data, AI,
+  finance, accounting, and automation. I’m still figuring out exactly where that takes me, so I
+  don't want the portfolio to make me look like I have my entire career mapped out. I want it to
+  show that I'm curious, I like building things, and I'm interested in learning where those
+  interests take me.
+
+
+  Overall, make it feel like my own corner of the internet, not a résumé converted into a website.

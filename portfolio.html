@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PRASHANT.OS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#050505;
+    --fg:#e9e9e9;
+    --dim:#8a8a8a;
+    --accent:#5e6ad2;
+    --magenta:#ff2bd6;
+    --cyan:#00fff2;
+    --yellow:#f7ff00;
+    --win-bg:#0b0b0c;
+    --win-border:#3a3a3a;
+    --pixel:'Press Start 2P', monospace;
+    --mono:'VT323', monospace;
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0; padding:0; height:100%;
+    background:var(--bg); color:var(--fg);
+    font-family:var(--mono);
+    overflow:hidden;
+    cursor:default;
+  }
+  ::selection{ background:var(--accent); color:#000; }
+
+  /* ---------- BOOT SCREEN ---------- */
+  #boot{
+    position:fixed; inset:0; background:#000; color:#0f0;
+    font-family:var(--mono); font-size:20px; line-height:1.5;
+    padding:32px; z-index:9999; white-space:pre-wrap;
+  }
+  #boot .cursor-blink{ animation:blink 1s step-end infinite; }
+  #boot-skip{
+    position:absolute; bottom:24px; right:32px; font-family:var(--pixel);
+    font-size:8px; color:#0f0; opacity:.6; cursor:pointer;
+  }
+  @keyframes blink{ 50%{ opacity:0; } }
+
+  /* ---------- CRT / SCANLINES ---------- */
+  #crt{
+    position:fixed; inset:0; pointer-events:none; z-index:9998;
+    background:repeating-linear-gradient(
+      to bottom, rgba(255,255,255,0.035) 0px, rgba(255,255,255,0.035) 1px,
+      transparent 2px, transparent 3px
+    );
+    mix-blend-mode:overlay;
+    opacity:0;
+    transition:opacity .3s;
+  }
+  #crt.on{ opacity:1; }
+  #crt::after{
+    content:''; position:absolute; inset:0;
+    background:radial-gradient(ellipse at center, rgba(0,0,0,0) 60%, rgba(0,0,0,0.45) 100%);
+  }
+
+  /* ---------- DESKTOP ---------- */
+  #desktop{
+    position:relative; width:100%; height:100%;
+    background:
+      radial-gradient(circle at 20% 15%, rgba(94,106,210,0.10), transparent 40%),
+      radial-gradient(circle at 85% 80%, rgba(255,43,214,0.08), transparent 40%),
+      var(--bg);
+    display:none;
+  }
+  #desktop.show{ display:block; }
+
+  .icons{
+    position:absolute; top:24px; left:24px;
+    display:flex; flex-direction:column; gap:26px;
+  }
+  .icon{
+    width:84px; text-align:center; cursor:pointer; user-select:none;
+  }
+  .icon .glyph{
+    width:44px; height:44px; margin:0 auto 6px; border:2px solid var(--fg);
+    background:#111; position:relative;
+    box-shadow:3px 3px 0 rgba(0,0,0,0.6);
+  }
+  .icon .glyph::before{
+    content:''; position:absolute; inset:6px; border:1px dashed var(--icolor,var(--cyan));
+  }
+  .icon span{
+    font-family:var(--pixel); font-size:8px; color:var(--fg);
+    text-shadow:1px 1px 0 #000; line-height:1.4; display:block;
+  }
+  .icon:hover .glyph{ border-color:var(--icolor,var(--cyan)); }
+  .icon:active .glyph{ transform:translate(1px,1px); box-shadow:2px 2px 0 rgba(0,0,0,0.6); }
+
+  /* hero glyph */
+  #hero{
+    position:absolute; top:22%; left:50%; transform:translate(-50%,-50%);
+    text-align:center; pointer-events:none; width:90%; max-width:820px;
+  }
+  #hero h1{
+    font-family:var(--pixel); font-size:clamp(20px,4vw,42px);
+    margin:0 0 14px; letter-spacing:2px; color:var(--fg);
+    text-shadow:2px 2px 0 var(--magenta), -2px -2px 0 var(--cyan);
+    position:relative;
+  }
+  #hero h1.glitching{ animation:glitch 0.4s steps(2) 2; }
+  @keyframes glitch{
+    0%{ clip-path:inset(0 0 90% 0); transform:translate(-3px,0); }
+    20%{ clip-path:inset(20% 0 60% 0); transform:translate(3px,0); }
+    40%{ clip-path:inset(60% 0 10% 0); transform:translate(-2px,0); }
+    60%{ clip-path:inset(10% 0 70% 0); transform:translate(2px,0); }
+    80%{ clip-path:inset(80% 0 0 0); transform:translate(-1px,0); }
+    100%{ clip-path:inset(0 0 0 0); transform:translate(0,0); }
+  }
+  #hero p{
+    font-family:var(--mono); font-size:20px; color:var(--dim); margin:0;
+  }
+  #hero .blinkcaret{ color:var(--yellow); animation:blink 1s step-end infinite; }
+
+  /* ---------- WINDOWS ---------- */
+  .win{
+    position:absolute; width:420px; max-width:88vw;
+    background:var(--win-bg); border:2px solid var(--win-border);
+    box-shadow:6px 6px 0 rgba(0,0,0,0.55);
+    display:none; flex-direction:column;
+    z-index:10;
+  }
+  .win.open{ display:flex; }
+  .win.focused{ border-color:var(--wc,var(--accent)); }
+  .win-title{
+    font-family:var(--pixel); font-size:9px; color:#000;
+    background:var(--wc,var(--accent));
+    padding:8px 8px; display:flex; align-items:center; justify-content:space-between;
+    cursor:grab; letter-spacing:1px;
+  }
+  .win-title:active{ cursor:grabbing; }
+  .win-title .btns{ display:flex; gap:5px; }
+  .win-title .btns span{
+    width:14px; height:14px; background:#000; color:var(--wc,var(--accent));
+    display:flex; align-items:center; justify-content:center;
+    font-size:9px; border:1px solid #000; cursor:pointer;
+  }
+  .win-body{
+    padding:16px 18px; font-size:19px; line-height:1.5; color:var(--fg);
+    overflow-y:auto; max-height:56vh;
+  }
+  .win-body h3{
+    font-family:var(--pixel); font-size:11px; color:var(--wc,var(--accent));
+    margin:0 0 10px; letter-spacing:1px;
+  }
+  .win-body p{ margin:0 0 12px; }
+  .win-body .tag{
+    display:inline-block; font-family:var(--pixel); font-size:7px;
+    border:1px solid var(--dim); color:var(--dim); padding:4px 6px; margin:0 6px 6px 0;
+  }
+  .win-body .status{
+    display:inline-block; font-family:var(--pixel); font-size:7px;
+    padding:4px 6px; margin-bottom:10px; color:#000;
+  }
+  .status.paused{ background:var(--yellow); }
+  .status.complete{ background-color: #0f0; }
+  .status.current{ background:var(--magenta); }
+  .win-body ul{ margin:0 0 12px; padding-left:20px; }
+  .win-body li{ margin-bottom:4px; }
+  .win-body a{ color:var(--cyan); text-decoration:none; border-bottom:1px dotted var(--cyan); }
+  .win-body a:hover{ color:var(--yellow); border-color:var(--yellow); }
+  .divider{ border:none; border-top:1px dashed var(--win-border); margin:14px 0; }
+  .proj-block:not(:last-child){ margin-bottom:20px; }
+
+  /* ---------- TASKBAR ---------- */
+  #taskbar{
+    position:fixed; left:0; right:0; bottom:0; height:44px;
+    background:#000; border-top:2px solid var(--win-border);
+    display:flex; align-items:center; padding:0 10px; gap:10px;
+    z-index:100; font-family:var(--pixel); font-size:9px;
+  }
+  #start-btn{
+    background:var(--accent); color:#000; border:2px solid #000;
+    padding:8px 12px; cursor:pointer; box-shadow:2px 2px 0 rgba(255,255,255,0.15);
+  }
+  #start-btn:active{ transform:translate(1px,1px); }
+  #taskbar-items{ display:flex; gap:8px; flex:1; overflow-x:auto; }
+  .task-chip{
+    color:var(--fg); border:1px solid var(--win-border); padding:8px 10px;
+    cursor:pointer; white-space:nowrap; font-size:8px;
+  }
+  .task-chip.active{ border-color:var(--accent); color:var(--accent); }
+  #clock{ color:var(--dim); font-family:var(--mono); font-size:16px; white-space:nowrap; }
+  #crt-toggle{
+    color:var(--dim); border:1px solid var(--win-border); padding:8px 10px; cursor:pointer;
+    font-size:8px;
+  }
+  #crt-toggle.on{ color:var(--cyan); border-color:var(--cyan); }
+
+  /* ---------- START MENU ---------- */
+  #start-menu{
+    position:fixed; left:10px; bottom:52px; width:200px;
+    background:#000; border:2px solid var(--accent); z-index:200; display:none;
+  }
+  #start-menu.show{ display:block; }
+  #start-menu .sm-item{
+    padding:12px 14px; font-family:var(--pixel); font-size:9px;
+    cursor:pointer; border-bottom:1px solid var(--win-border); color:var(--fg);
+  }
+  #start-menu .sm-item:last-child{ border-bottom:none; }
+  #start-menu .sm-item:hover{ background:var(--accent); color:#000; }
+
+  /* scrollbar retro */
+  .win-body::-webkit-scrollbar{ width:10px; }
+  .win-body::-webkit-scrollbar-track{ background:#000; }
+  .win-body::-webkit-scrollbar-thumb{ background:var(--win-border); }
+
+  @media (max-width:640px){
+    .icons{ top:14px; left:14px; gap:18px; }
+    .win{ width:92vw; }
+    #hero{ top:16%; }
+    #hero p{ font-size:16px; }
+  }
+</style>
+</head>
+<body>
+
+<div id="boot">LYNCHBURG_OS v3.86
+BOOTING...
+&gt; Loading PRASHANT.SYS ................ OK
+&gt; Mounting ACCOUNTING.DLL ............. OK
+&gt; Mounting COMPUTER_SCIENCE.DLL ....... OK
+&gt; Mounting MATH_MINOR.DLL ............. OK
+&gt; Checking for exaggerated claims ..... NONE FOUND
+&gt; Starting desktop environment<span class="cursor-blink">_</span></div>
+<div id="boot-skip">[ click to skip ]</div>
+
+<div id="crt"></div>
+
+<div id="desktop">
+  <div id="hero">
+    <h1 id="hero-title">PRASHANT KARKI</h1>
+    <p>accounting &times; computer science &times; math<span class="blinkcaret">_</span></p>
+  </div>
+
+  <div class="icons">
+    <div class="icon" data-win="about" style="--icolor:var(--cyan)">
+      <div class="glyph"></div><span>ABOUT_ME.TXT</span>
+    </div>
+    <div class="icon" data-win="experience" style="--icolor:var(--yellow)">
+      <div class="glyph"></div><span>EXPERIENCE.EXE</span>
+    </div>
+    <div class="icon" data-win="projects" style="--icolor:var(--magenta)">
+      <div class="glyph"></div><span>PROJECTS.EXE</span>
+    </div>
+    <div class="icon" data-win="skills" style="--icolor:var(--accent)">
+      <div class="glyph"></div><span>SKILLS.DLL</span>
+    </div>
+    <div class="icon" data-win="education" style="--icolor:var(--cyan)">
+      <div class="glyph"></div><span>EDUCATION.EDU</span>
+    </div>
+    <div class="icon" data-win="contact" style="--icolor:var(--yellow)">
+      <div class="glyph"></div><span>CONTACT.EML</span>
+    </div>
+  </div>
+
+  <!-- WINDOWS -->
+  <div class="win" id="win-about" data-color="var(--cyan)" style="top:120px; left:120px;">
+    <div class="win-title"><span>ABOUT_ME.TXT</span><div class="btns"><span data-act="close">x</span></div></div>
+    <div class="win-body">
+      <p>hey, I'm Prashant &mdash; a student at the University of Lynchburg studying accounting and computer science, with a math minor. Basically: I like numbers, I like code, and I like figuring out where the two connect.</p>
+      <p>Most of what I build lives somewhere between business and tech &mdash; data, automation, dashboards &mdash; with the occasional side project that has nothing to do with either.</p>
+      <p>Off-screen I play guitar, sing, write my own songs.</p>
+      <p>I don't have my whole career mapped out. I'm interested in where tech and business overlap &mdash; data, AI, finance, automation &mdash; and I'm still figuring out exactly where that takes me. For now: building things, learning fast, seeing what sticks.</p>
+    </div>
+  </div>
+
+  <div class="win" id="win-experience" data-color="var(--yellow)" style="top:150px; left:560px;">
+    <div class="win-title"><span>EXPERIENCE.EXE</span><div class="btns"><span data-act="close">x</span></div></div>
+    <div class="win-body">
+      <span class="status complete">May 2026 – Aug 2026</span>
+      <h3>Audit Data Analyst Intern &mdash; Ingersoll Rand</h3>
+      <ul>
+        <li>Reduced preparation needs for 24+ automated controls by building SQL/Python  </li>
+        <li> Increased confidence in Snowflake outputs, performing independent completeness and accuracy validation</li>
+        <li>Automated physical inventory calculations for six global manufacturing sites used by internal audit to validate 
+            site calculations and grant physical inventory exemptions </li>
+        <li>Re-built four dashboards in Qlik and two in Streamlit that previously existed in other analytic solutions which 
+            are being phased out (Power BI, Tableau)</li>
+      </ul>
+      <hr class="divider">
+        <span class="tag">Python</span><span class="tag">SQL</span><span class="tag">Snowflake AI</span><span class="tag">CortexCode</span><span class="tag">Tableau</span><span class="tag">Qlik</span><span class="tag">Documentation</span><span class="tag">KNIME</span><span class="tag">Copilot</span><span class="tag">Excel</span><span class="tag">ServiceNow</span><span class="tag">AWS S3</span><span class="tag">Audit</span><span class="tag">SAP</span><span class="tag">SOX</span>
+    </div>
+  </div>
+
+  <div class="win open" id="win-projects" data-color="var(--magenta)" style="top:270px; left:280px;">
+    <div class="win-title"><span>PROJECTS.EXE</span><div class="btns"><span data-act="close">x</span></div></div>
+    <div class="win-body">
+      <div class="proj-block">
+        <span class="status complete">COMPLETE</span>
+        <h3>IMDBSpark</h3>
+        <p>Developed a distributed Apache Spark and Hadoop pipeline to process 3M+ IMDb records from AWS S3 across two EC2 instances, analyzing 7 GB of data in under 5 minutes. Optimized YARN cluster deployment to reduce execution time by 25%, demonstrating scalable big-data processing.</p>
+        <span class="tag">Java</span><span class="tag">AWS</span><span class="tag">Apache Spark</span><span class="tag">Hadoop</span><span class="tag">AWS S3</span><span class="tag">AWS EC2</span><span class="tag">YARN</span>
+      </div>
+      <div class="proj-block">
+        <span class="status complete">COMPLETE</span>
+        <h3>PiChat</h3>
+        <p>Engineered a Java CLI-based chat application using RabbitMQ for real-time one-to-one and group messaging, deployed on a Raspberry Pi broker to support 500 concurrent messages across distributed devices. Implemented Direct/Fanout exchanges, Round Robin load balancing, and RPC-based communication, achieving 72% message reliability.</p>
+        <span class="tag">Java</span><span class="tag">RabbitMQ</span><span class="tag">Spring Boot</span><span class="tag">Raspberry Pi</span>
+      </div>
+      <div class="proj-block">
+        <span class="status complete">COMPLETE</span>
+        <h3>ULChessClub</h3>
+        <p>Led a team of five in developing and delivering a C# software project using Agile methodologies, maintaining weekly releases with zero critical bugs. Designed comprehensive test cases covering core functionalities to improve code reliability, while leveraging Azure DevOps and Jira for project management, remote pair programming, version control, and task tracking, resulting in a 20% reduction in issue resolution time.</p>
+        <span class="tag">Project Management</span><span class="tag">C#</span><span class="tag">Azure DevOps</span><span class="tag">Git</span>
+      </div>
+      <div class="proj-block">
+        <span class="status complete">COMPLETE</span>
+        <h3>LeetKeeper</h3>
+        <p>Developed a Discord bot using Node.js and MongoDB to encourage consistent LeetCode practice by tracking user streaks and problem-solving progress. Integrated the LeetCode-Query API with database queries to provide real-time performance metrics, identify trends, and monitor user engagement. Engaged 22 freshman Computer Science students in competitive programming, helping foster early technical preparation and consistent problem-solving habits.</p>
+        <span class="tag">NodeJS</span><span class="tag">MongoDB</span>
+      </div>
+      <div class="proj-block">
+        <span class="status complete">COMPLETE</span>
+        <h3>AssignPro</h3>
+        <p>Developed a Java-based RESTful API implementing CRUD operations to facilitate real-time data communication between a local computer and a Raspberry Pi server. Leveraged Redis for high-speed data storage and retrieval, improving data access efficiency while ensuring reliable communication and synchronization between devices.</p>
+        <span class="tag">Java</span><span class="tag">RESTful API</span><span class="tag">Raspberry Pi</span><span class="tag">Spring Boot</span><span class="tag">Redis</span>
+      </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="win" id="win-skills" data-color="var(--accent)" style="top:180px; left:200px;">
+    <div class="win-title"><span>SKILLS.DLL</span><div class="btns"><span data-act="close">x</span></div></div>
+    <div class="win-body">
+
+    <h3>Languages</h3>
+    <p>
+        <span class="tag">Python</span>
+        <span class="tag">Java</span>
+        <span class="tag">C#</span>
+        <span class="tag">C++</span>
+        <span class="tag">PHP</span>
+        <span class="tag">SQL</span>
+    </p>
+
+<h3>Data &amp; Analytics</h3>
+<p>
+  <span class="tag">Snowflake</span>
+  <span class="tag">Apache Spark</span>
+  <span class="tag">Hadoop</span>
+  <span class="tag">Qlik Sense</span>
+  <span class="tag">Qlik</span>
+  <span class="tag">Tableau</span>
+  <span class="tag">Streamlit</span>
+  <span class="tag">KNIME</span>
+  <span class="tag">Excel</span>
+  <span class="tag">Data Analysis</span>
+</p>
+
+<h3>Cloud &amp; Infrastructure</h3>
+<p>
+  <span class="tag">AWS S3</span>
+  <span class="tag">AWS EC2</span>
+  <span class="tag">YARN</span>
+  <span class="tag">Raspberry Pi</span>
+</p>
+
+<h3>Backend &amp; Databases</h3>
+<p>
+  <span class="tag">Node.js</span>
+  <span class="tag">Spring Boot</span>
+  <span class="tag">RESTful API</span>
+  <span class="tag">MongoDB</span>
+  <span class="tag">Redis</span>
+  <span class="tag">RabbitMQ</span>
+  <span class="tag">CRUD Operations</span>
+</p>
+
+<h3>Development &amp; Collaboration</h3>
+<p>
+  <span class="tag">Git</span>
+  <span class="tag">Azure DevOps</span>
+  <span class="tag">Jira</span>
+  <span class="tag">Agile</span>
+  <span class="tag">Software Testing</span>
+  <span class="tag">Pair Programming</span>
+  <span class="tag">Project Management</span>
+</p>
+
+<h3>Domains</h3>
+<p>
+  <span class="tag">Data Analysis</span>
+  <span class="tag">Accounting &amp; Audit & Tax</span>
+  <span class="tag">Automation</span>
+  <span class="tag">Big Data</span>
+  <span class="tag">Distributed Systems</span>
+  <span class="tag">Mathematics</span>
+</p>
+    </div>
+  </div>
+
+  <div class="win" id="win-education" data-color="var(--cyan)" style="top:210px; left:620px;">
+    <div class="win-title"><span>EDUCATION.EDU</span><div class="btns"><span data-act="close">x</span></div></div>
+    <div class="win-body">
+      <h3>University of Lynchburg</h3>
+      <p>B.S. Accounting &amp; Computer Science (double major) &middot; Math minor</p>
+      <p>CGPA ~3.86 <br> &middot; Global Distinguished Scholarship recipient</p>
+      <p> &middot; Most Outstanding Student in Computer Science</p>
+    </div>
+  </div>
+
+  <div class="win" id="win-contact" data-color="var(--yellow)" style="top:320px; left:480px;">
+    <div class="win-title"><span>CONTACT.EML</span><div class="btns"><span data-act="close">x</span></div></div>
+    <div class="win-body">
+      <p>Email &mdash; <a href="mailto:praskarkii@gmail.com">praskarkii@gmail.com</a></p>
+      <p>GitHub &mdash; <a href="https://github.com/prashantjerk" target="_blank" rel="noopener">github.com/prashantjerk</a></p>
+      <p>LinkedIn &mdash; <a href="https://linkedin.com/in/prashant-karki" target="_blank" rel="noopener">linkedin.com/in/prashant-karki</a></p>
+    </div>
+  </div>
+</div>
+
+<div id="start-menu">
+  <div class="sm-item" data-win="about">About Me</div>
+  <div class="sm-item" data-win="experience">Experience</div>
+  <div class="sm-item" data-win="projects">Projects</div>
+  <div class="sm-item" data-win="skills">Skills</div>
+  <div class="sm-item" data-win="education">Education</div>
+  <div class="sm-item" data-win="contact">Contact</div>
+</div>
+
+<div id="taskbar">
+  <div id="start-btn">&#9632; START</div>
+  <div id="taskbar-items"></div>
+  <div id="crt-toggle">CRT: OFF</div>
+  <div id="clock">--:--:--</div>
+</div>
+
+<script>
+(function(){
+  var boot = document.getElementById('boot');
+  var desktop = document.getElementById('desktop');
+  function bootDone(){
+    boot.style.display='none';
+    desktop.classList.add('show');
+  }
+  document.getElementById('boot-skip').addEventListener('click', bootDone);
+  setTimeout(bootDone, 2600);
+
+  // ---- window manager ----
+  var zTop = 20;
+  var order = ['about','experience','projects','skills','education','contact'];
+  function winEl(name){ return document.getElementById('win-'+name); }
+
+  function focusWin(name){
+    document.querySelectorAll('.win').forEach(function(w){ w.classList.remove('focused'); });
+    var w = winEl(name);
+    if(!w) return;
+    w.style.zIndex = ++zTop;
+    w.classList.add('focused');
+    w.style.setProperty('--wc', w.dataset.color);
+    updateTaskbar();
+  }
+
+  function openWin(name){
+    var w = winEl(name);
+    if(!w) return;
+    w.classList.add('open');
+    focusWin(name);
+  }
+  function closeWin(name){
+    var w = winEl(name);
+    if(!w) return;
+    w.classList.remove('open');
+    updateTaskbar();
+  }
+  function toggleWin(name){
+    var w = winEl(name);
+    if(!w) return;
+    if(w.classList.contains('open')){ focusWin(name); } else { openWin(name); }
+  }
+
+  document.querySelectorAll('.icon').forEach(function(icon){
+    icon.addEventListener('click', function(){ toggleWin(icon.dataset.win); });
+  });
+  document.querySelectorAll('#start-menu .sm-item').forEach(function(item){
+    item.addEventListener('click', function(){
+      toggleWin(item.dataset.win);
+      document.getElementById('start-menu').classList.remove('show');
+    });
+  });
+  document.querySelectorAll('.win').forEach(function(w){
+    w.addEventListener('mousedown', function(){ focusWin(w.id.replace('win-','')); });
+    var closeBtn = w.querySelector('[data-act="close"]');
+    closeBtn.addEventListener('click', function(e){
+      e.stopPropagation();
+      closeWin(w.id.replace('win-',''));
+    });
+    w.style.setProperty('--wc', w.dataset.color);
+  });
+
+  // draggable windows
+  document.querySelectorAll('.win-title').forEach(function(title){
+    var win = title.closest('.win');
+    var dragging=false, offX=0, offY=0;
+    title.addEventListener('mousedown', function(e){
+      if(e.target.closest('.btns')) return;
+      dragging = true;
+      var rect = win.getBoundingClientRect();
+      offX = e.clientX - rect.left;
+      offY = e.clientY - rect.top;
+      focusWin(win.id.replace('win-',''));
+      e.preventDefault();
+    });
+    document.addEventListener('mousemove', function(e){
+      if(!dragging) return;
+      var x = Math.max(0, e.clientX - offX);
+      var y = Math.max(0, e.clientY - offY - 44);
+      win.style.left = x+'px';
+      win.style.top = y+'px';
+    });
+    document.addEventListener('mouseup', function(){ dragging=false; });
+    // touch support
+    title.addEventListener('touchstart', function(e){
+      if(e.target.closest('.btns')) return;
+      dragging = true;
+      var rect = win.getBoundingClientRect();
+      var t = e.touches[0];
+      offX = t.clientX - rect.left;
+      offY = t.clientY - rect.top;
+      focusWin(win.id.replace('win-',''));
+    }, {passive:true});
+    document.addEventListener('touchmove', function(e){
+      if(!dragging) return;
+      var t = e.touches[0];
+      var x = Math.max(0, t.clientX - offX);
+      var y = Math.max(0, t.clientY - offY - 44);
+      win.style.left = x+'px';
+      win.style.top = y+'px';
+    }, {passive:true});
+    document.addEventListener('touchend', function(){ dragging=false; });
+  });
+
+  // ---- taskbar ----
+  function updateTaskbar(){
+    var wrap = document.getElementById('taskbar-items');
+    wrap.innerHTML='';
+    order.forEach(function(name){
+      var w = winEl(name);
+      if(w.classList.contains('open')){
+        var chip = document.createElement('div');
+        chip.className = 'task-chip' + (w.classList.contains('focused') ? ' active':'');
+        chip.textContent = name.toUpperCase();
+        chip.addEventListener('click', function(){ toggleWin(name); });
+        wrap.appendChild(chip);
+      }
+    });
+  }
+  updateTaskbar();
+
+  document.getElementById('start-btn').addEventListener('click', function(e){
+    e.stopPropagation();
+    document.getElementById('start-menu').classList.toggle('show');
+  });
+  document.addEventListener('click', function(e){
+    if(!e.target.closest('#start-menu') && !e.target.closest('#start-btn')){
+      document.getElementById('start-menu').classList.remove('show');
+    }
+  });
+
+  // clock
+  function tick(){
+    var d = new Date();
+    var h = d.getHours().toString().padStart(2,'0');
+    var m = d.getMinutes().toString().padStart(2,'0');
+    var s = d.getSeconds().toString().padStart(2,'0');
+    document.getElementById('clock').textContent = h+':'+m+':'+s;
+  }
+  tick(); setInterval(tick, 1000);
+
+  // CRT toggle
+  var crt = document.getElementById('crt');
+  var crtBtn = document.getElementById('crt-toggle');
+  var crtOn = false;
+  crtBtn.addEventListener('click', function(){
+    crtOn = !crtOn;
+    crt.classList.toggle('on', crtOn);
+    crtBtn.classList.toggle('on', crtOn);
+    crtBtn.textContent = 'CRT: ' + (crtOn ? 'ON' : 'OFF');
+  });
+
+  // hero glitch on hover
+  var heroTitle = document.getElementById('hero-title');
+  heroTitle.style.pointerEvents='auto';
+  heroTitle.style.cursor='default';
+  heroTitle.addEventListener('mouseenter', function(){
+    heroTitle.classList.remove('glitching');
+    void heroTitle.offsetWidth;
+    heroTitle.classList.add('glitching');
+  });
+
+  // cursor trail (lightweight)
+  var trailColors=['var(--cyan)','var(--magenta)','var(--yellow)'];
+  var lastTrail=0;
+  document.addEventListener('mousemove', function(e){
+    var now = Date.now();
+    if(now - lastTrail < 40) return;
+    lastTrail = now;
+    var dot = document.createElement('div');
+    dot.style.position='fixed';
+    dot.style.left = e.clientX+'px';
+    dot.style.top = e.clientY+'px';
+    dot.style.width='4px';
+    dot.style.height='4px';
+    dot.style.background = trailColors[Math.floor(Math.random()*trailColors.length)];
+    dot.style.pointerEvents='none';
+    dot.style.zIndex='9997';
+    dot.style.transition='opacity .5s, transform .5s';
+    document.body.appendChild(dot);
+    requestAnimationFrame(function(){
+      dot.style.opacity='0';
+      dot.style.transform='translateY(10px) scale(0.5)';
+    });
+    setTimeout(function(){ dot.remove(); }, 520);
+  });
+})();
+</script>
+</body>
+</html>
